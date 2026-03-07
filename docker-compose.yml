@@ -11,7 +11,7 @@ services:
     ports:
       - "127.0.0.1:8123:8123"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -1,10 +1,39 @@
--- OTel Collector ClickHouse exporter creates these tables automatically when
--- create_schema: true. We create the database and our analytics table here.
-
 CREATE DATABASE IF NOT EXISTS otel;
 
--- Primary analytics table: one row per CC log event
--- The MV below populates this from otel_logs
+-- Standard otel_logs table matching the otelcol-contrib ClickHouse exporter schema.
+-- We pre-create it so the MV below can reference it at init time.
+-- The exporter's create_schema: true will skip creation since it already exists.
+CREATE TABLE IF NOT EXISTS otel.otel_logs
+(
+    Timestamp               DateTime64(9)                              CODEC(Delta, ZSTD(1)),
+    TimestampDate           Date MATERIALIZED toDate(Timestamp),
+    TimestampTime           DateTime MATERIALIZED toDateTime(Timestamp),
+    TraceId                 String                                     CODEC(ZSTD(1)),
+    SpanId                  String                                     CODEC(ZSTD(1)),
+    TraceFlags              UInt32,
+    SeverityText            LowCardinality(String)                     CODEC(ZSTD(1)),
+    SeverityNumber          Int32,
+    ServiceName             LowCardinality(String)                     CODEC(ZSTD(1)),
+    Body                    String                                     CODEC(ZSTD(1)),
+    ResourceSchemaUrl       String                                     CODEC(ZSTD(1)),
+    ResourceAttributes      Map(LowCardinality(String), String)        CODEC(ZSTD(1)),
+    ScopeSchemaUrl          String                                     CODEC(ZSTD(1)),
+    ScopeName               String                                     CODEC(ZSTD(1)),
+    ScopeVersion            String                                     CODEC(ZSTD(1)),
+    ScopeAttributes         Map(LowCardinality(String), String)        CODEC(ZSTD(1)),
+    LogAttributes           Map(LowCardinality(String), String)        CODEC(ZSTD(1)),
+    INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
+    INDEX idx_log_attr_key   mapKeys(LogAttributes)   TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+    INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0)  GRANULARITY 1
+)
+ENGINE = MergeTree()
+PARTITION BY toDate(Timestamp)
+ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
+SETTINGS index_granularity = 8192;
+
+-- Primary analytics table: one row per CC log event.
+-- Populated by the MV below at insert time.
 CREATE TABLE IF NOT EXISTS otel.events
 (
     timestamp             DateTime64(9),
@@ -29,8 +58,7 @@ PARTITION BY toYYYYMM(timestamp)
 ORDER BY (timestamp, user_email, session_id)
 TTL toDateTime(timestamp) + INTERVAL 2 YEAR;
 
--- Materialized view: otel_logs → events
--- Runs at insert time, zero maintenance
+-- Materialized view: otel_logs → events (runs at insert time)
 CREATE MATERIALIZED VIEW IF NOT EXISTS otel.mv_otel_logs_to_events
 TO otel.events
 AS
