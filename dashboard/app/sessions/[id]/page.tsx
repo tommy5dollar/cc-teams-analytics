@@ -1,4 +1,5 @@
 import { getSessionEvents } from "@/lib/queries/sessions";
+import SessionTimeline from "@/components/SessionTimeline";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,10 @@ export default async function SessionPage({
           <Stat label="Cost" value={`$${totalCost.toFixed(4)}`} />
           <Stat label="Input tokens" value={totalInput.toLocaleString()} />
           <Stat label="Output tokens" value={totalOutput.toLocaleString()} />
+        </div>
+
+        <div className="mb-6">
+          <SessionTimeline events={events} />
         </div>
 
         {/* Event timeline */}
