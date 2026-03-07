@@ -1,0 +1,11 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    user: "1000:1000"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+      - ./data:/data
+    ports:
+      - "4317:4317" # gRPC
+      - "4318:4318" # HTTP
+    restart: unless-stopped

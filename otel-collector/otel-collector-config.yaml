@@ -1,0 +1,47 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+exporters:
+  file/traces:
+    path: /data/traces.jsonl
+    format: json
+    compression: zstd
+    flush_interval: 1s
+    rotation:
+      max_megabytes: 50
+      max_backups: 10
+
+  file/metrics:
+    path: /data/metrics.jsonl
+    format: json
+    compression: zstd
+    flush_interval: 1s
+    rotation:
+      max_megabytes: 50
+      max_backups: 10
+
+  file/logs:
+    path: /data/logs.jsonl
+    format: json
+    compression: zstd
+    flush_interval: 1s
+    rotation:
+      max_megabytes: 50
+      max_backups: 10
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [file/traces]
+    metrics:
+      receivers: [otlp]
+      exporters: [file/metrics]
+    logs:
+      receivers: [otlp]
+      exporters: [file/logs]
