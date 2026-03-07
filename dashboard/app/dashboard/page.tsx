@@ -12,6 +12,7 @@ import UserBreakdownTable from "@/components/UserBreakdownTable";
 import ClientInfoTabs from "@/components/ClientInfoTabs";
 import ToolsPanel from "@/components/ToolsPanel";
 import SessionsTable from "@/components/SessionsTable";
+import SessionBubbleChart from "@/components/SessionBubbleChart";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function DashboardPage() {
     getUserStats(30),
     getModelStats(30),
     getModelUsersOverTime(30),
-    getRecentSessions(20),
+    getRecentSessions(100),
     getClientInfo(30),
     getVersionOverTime(30),
     getToolStats(30),
@@ -90,7 +91,12 @@ export default async function DashboardPage() {
           <UserBreakdownTable data={usersData} />
         </Suspense>
 
-        {/* Sessions */}
+        {/* Session bubble chart */}
+        <Suspense fallback={<Skeleton h="h-80" />}>
+          <SessionBubbleChart sessions={sessionsData} />
+        </Suspense>
+
+        {/* Sessions table */}
         <Suspense fallback={<Skeleton h="h-64" />}>
           <SessionsTable data={sessionsData} />
         </Suspense>
