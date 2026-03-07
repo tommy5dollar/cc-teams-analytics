@@ -51,7 +51,12 @@ CREATE TABLE IF NOT EXISTS otel.events
     cache_creation_tokens UInt32,
     cost_usd              Float64,
     body                  String,
-    service_name          LowCardinality(String)
+    service_name          LowCardinality(String),
+    cc_version            LowCardinality(String),
+    terminal_type         LowCardinality(String),
+    os_type               LowCardinality(String),
+    host_arch             LowCardinality(String),
+    speed                 LowCardinality(String)
 )
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
@@ -78,5 +83,10 @@ SELECT
     toUInt32OrZero(LogAttributes['cache_creation_tokens'])  AS cache_creation_tokens,
     toFloat64OrZero(LogAttributes['cost_usd'])              AS cost_usd,
     Body                                                    AS body,
-    ServiceName                                             AS service_name
+    ServiceName                                             AS service_name,
+    ResourceAttributes['service.version']                   AS cc_version,
+    LogAttributes['terminal.type']                          AS terminal_type,
+    ResourceAttributes['os.type']                           AS os_type,
+    ResourceAttributes['host.arch']                         AS host_arch,
+    LogAttributes['speed']                                  AS speed
 FROM otel.otel_logs;

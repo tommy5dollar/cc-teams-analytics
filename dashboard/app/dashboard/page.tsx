@@ -4,21 +4,24 @@ import { getDailyStats } from "@/lib/queries/byDay";
 import { getUserStats } from "@/lib/queries/byUser";
 import { getModelStats } from "@/lib/queries/byModel";
 import { getRecentSessions } from "@/lib/queries/sessions";
+import { getClientInfo } from "@/lib/queries/clientInfo";
 import OverviewCards from "@/components/OverviewCards";
 import CostTimelineChart from "@/components/CostTimelineChart";
 import UserBreakdownTable from "@/components/UserBreakdownTable";
 import ModelUsageChart from "@/components/ModelUsageChart";
 import SessionsTable from "@/components/SessionsTable";
+import ClientInfoTable from "@/components/ClientInfoTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [overview, daily, users, models, sessions] = await Promise.allSettled([
+  const [overview, daily, users, models, sessions, clientInfo] = await Promise.allSettled([
     getOverviewStats(),
     getDailyStats(30),
     getUserStats(30),
     getModelStats(30),
     getRecentSessions(20),
+    getClientInfo(30),
   ]);
 
   const overviewData =
@@ -29,6 +32,7 @@ export default async function DashboardPage() {
   const usersData = users.status === "fulfilled" ? users.value : [];
   const modelsData = models.status === "fulfilled" ? models.value : [];
   const sessionsData = sessions.status === "fulfilled" ? sessions.value : [];
+  const clientInfoData = clientInfo.status === "fulfilled" ? clientInfo.value : [];
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -63,6 +67,10 @@ export default async function DashboardPage() {
 
         <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-zinc-100" />}>
           <UserBreakdownTable data={usersData} />
+        </Suspense>
+
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-zinc-100" />}>
+          <ClientInfoTable data={clientInfoData} />
         </Suspense>
 
         <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-zinc-100" />}>
