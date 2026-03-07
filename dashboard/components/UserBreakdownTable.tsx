@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { UserStats } from "@/lib/queries/byUser";
 
 function fmt(n: number) {
@@ -34,8 +35,13 @@ export default function UserBreakdownTable({ data }: { data: UserStats[] }) {
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {data.map((u) => (
                 <tr key={u.user_email} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                  <td className="px-5 py-3 font-mono text-xs text-zinc-700 dark:text-zinc-300">
-                    {u.user_email}
+                  <td className="px-5 py-3 font-mono text-xs">
+                    <Link
+                      href={`/users/${encodeURIComponent(u.user_email)}`}
+                      className="text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                      {u.user_email}
+                    </Link>
                   </td>
                   <td className="px-5 py-3 text-right font-medium text-zinc-900 dark:text-zinc-50">
                     ${u.cost_usd.toFixed(2)}

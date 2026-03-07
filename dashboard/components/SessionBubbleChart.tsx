@@ -5,7 +5,6 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend,
 } from "recharts";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import type { SessionSummary } from "@/lib/queries/sessions";
 
 const USER_COLORS = [
@@ -120,13 +119,10 @@ const TAB = "px-3 py-1.5 text-sm rounded-md transition-colors text-zinc-500 hove
 
 export default function SessionBubbleChart({ sessions }: { sessions: SessionSummary[] }) {
   const router = useRouter();
-  const [view, setView] = useState<"all" | string>("all");
-
   const users = Array.from(new Set(sessions.map((s) => s.user_email))).sort();
   const userColorMap = new Map(users.map((u, i) => [u, USER_COLORS[i % USER_COLORS.length]]));
 
   const enriched = sessions.map((s) => ({ ...s, _ts: new Date(s.started_at).getTime() }));
-  const filtered = view === "all" ? enriched : enriched.filter((s) => s.user_email === view);
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
@@ -136,29 +132,23 @@ export default function SessionBubbleChart({ sessions }: { sessions: SessionSumm
           <p className="text-xs text-zinc-400">Bubble size and Y-axis proportional to cost</p>
         </div>
         <div className="flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/60">
-          <button
-            data-active={view === "all"}
-            className={TAB}
-            onClick={() => setView("all")}
-          >
-            All users
-          </button>
+          <span data-active="true" className={TAB}>All users</span>
           {users.map((u) => (
-            <button
+            <a
               key={u}
-              data-active={view === u}
+              href={`/users/${encodeURIComponent(u)}`}
               className={TAB}
-              onClick={() => setView(u)}
+              data-active="false"
             >
-              {u.split("@")[0]}
-            </button>
+              {u.split("@")[0]} ↗
+            </a>
           ))}
         </div>
       </div>
       <div className="p-4">
         <BubbleChart
-          sessions={filtered}
-          colorByUser={view === "all" && users.length > 1}
+          sessions={enriched}
+          colorByUser={users.length > 1}
           userColorMap={userColorMap}
           onClickSession={(id) => router.push(`/sessions/${encodeURIComponent(id)}`)}
         />
