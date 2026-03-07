@@ -1,0 +1,5 @@
+.env
+otel-collector/data/
+dashboard/node_modules/
+dashboard/.next/
+dashboard/.env*.local

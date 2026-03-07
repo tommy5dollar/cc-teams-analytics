@@ -7,26 +7,22 @@ receivers:
         endpoint: 0.0.0.0:4317
 
 exporters:
-  file/traces:
-    path: /data/traces.jsonl
-    format: json
-    compression: zstd
-    flush_interval: 1s
-    rotation:
-      max_megabytes: 50
-      max_backups: 10
+  clickhouse:
+    endpoint: tcp://clickhouse:9000
+    database: otel
+    create_schema: true
+    timeout: 5s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      queue_size: 10000
 
-  file/metrics:
-    path: /data/metrics.jsonl
-    format: json
-    compression: zstd
-    flush_interval: 1s
-    rotation:
-      max_megabytes: 50
-      max_backups: 10
-
-  file/logs:
-    path: /data/logs.jsonl
+  file/backup:
+    path: /data/backup.jsonl
     format: json
     compression: zstd
     flush_interval: 1s
@@ -38,10 +34,10 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [file/traces]
+      exporters: [clickhouse, file/backup]
     metrics:
       receivers: [otlp]
-      exporters: [file/metrics]
+      exporters: [clickhouse, file/backup]
     logs:
       receivers: [otlp]
-      exporters: [file/logs]
+      exporters: [clickhouse, file/backup]
