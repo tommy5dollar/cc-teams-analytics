@@ -26,6 +26,8 @@ export interface SessionEvent {
   decision: string;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
   cost_usd: number;
   body: string;
 }
@@ -111,6 +113,8 @@ export async function getSessionEvents(sessionId: string): Promise<SessionEvent[
         decision,
         input_tokens,
         output_tokens,
+        cache_read_tokens,
+        cache_creation_tokens,
         cost_usd,
         body
       FROM otel.events
@@ -128,6 +132,8 @@ export async function getSessionEvents(sessionId: string): Promise<SessionEvent[
     decision: string;
     input_tokens: string;
     output_tokens: string;
+    cache_read_tokens: string;
+    cache_creation_tokens: string;
     cost_usd: string;
     body: string;
   }>();
@@ -139,6 +145,8 @@ export async function getSessionEvents(sessionId: string): Promise<SessionEvent[
     decision: r.decision,
     input_tokens: parseInt(r.input_tokens),
     output_tokens: parseInt(r.output_tokens),
+    cache_read_tokens: parseInt(r.cache_read_tokens),
+    cache_creation_tokens: parseInt(r.cache_creation_tokens),
     cost_usd: parseFloat(r.cost_usd),
     body: r.body,
   }));

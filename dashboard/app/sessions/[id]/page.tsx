@@ -15,9 +15,11 @@ export default async function SessionPage({
     getSessionModelBreakdown(id).catch(() => []),
   ]);
 
-  const totalCost = events.reduce((s, e) => s + e.cost_usd, 0);
-  const totalInput = events.reduce((s, e) => s + e.input_tokens, 0);
-  const totalOutput = events.reduce((s, e) => s + e.output_tokens, 0);
+  const totalCost        = events.reduce((s, e) => s + e.cost_usd, 0);
+  const totalInput       = events.reduce((s, e) => s + e.input_tokens, 0);
+  const totalOutput      = events.reduce((s, e) => s + e.output_tokens, 0);
+  const totalCacheRead   = events.reduce((s, e) => s + e.cache_read_tokens, 0);
+  const totalCacheWrite  = events.reduce((s, e) => s + e.cache_creation_tokens, 0);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -40,10 +42,12 @@ export default async function SessionPage({
         {/* Summary bar */}
         <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex flex-wrap gap-6">
-            <Stat label="Events" value={String(events.length)} />
-            <Stat label="Total cost" value={`$${totalCost.toFixed(4)}`} />
-            <Stat label="Input tokens" value={totalInput.toLocaleString()} />
-            <Stat label="Output tokens" value={totalOutput.toLocaleString()} />
+            <Stat label="Events"       value={String(events.length)} />
+            <Stat label="Total cost"   value={`$${totalCost.toFixed(4)}`} />
+            <Stat label="Input"        value={totalInput.toLocaleString()} />
+            <Stat label="Output"       value={totalOutput.toLocaleString()} />
+            <Stat label="Cache read"   value={totalCacheRead.toLocaleString()} />
+            <Stat label="Cache write"  value={totalCacheWrite.toLocaleString()} />
           </div>
           {modelBreakdown.length > 0 && (
             <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
