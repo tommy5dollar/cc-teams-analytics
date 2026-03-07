@@ -25,6 +25,8 @@ export default function UserBreakdownTable({ data }: { data: UserStats[] }) {
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Cost</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Input</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Output</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Cache read</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Cache write</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Sessions</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Events</th>
               </tr>
@@ -43,6 +45,12 @@ export default function UserBreakdownTable({ data }: { data: UserStats[] }) {
                   </td>
                   <td className="px-5 py-3 text-right text-zinc-600 dark:text-zinc-400">
                     {fmt(u.output_tokens)}
+                  </td>
+                  <td className="px-5 py-3 text-right text-zinc-600 dark:text-zinc-400">
+                    {fmt(u.cache_read_tokens)}
+                  </td>
+                  <td className="px-5 py-3 text-right text-zinc-600 dark:text-zinc-400">
+                    {fmt(u.cache_creation_tokens)}
                   </td>
                   <td className="px-5 py-3 text-right text-zinc-600 dark:text-zinc-400">
                     {u.session_count}
