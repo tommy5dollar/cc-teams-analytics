@@ -18,7 +18,7 @@ export default function SessionsTable({ data }: { data: SessionSummary[] }) {
               <tr className="border-b border-zinc-100 dark:border-zinc-800">
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Session</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">User</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Model</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Models</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Cost</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Events</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Started</th>
@@ -36,7 +36,15 @@ export default function SessionsTable({ data }: { data: SessionSummary[] }) {
                     </Link>
                   </td>
                   <td className="px-5 py-3 text-xs text-zinc-600 dark:text-zinc-400">{s.user_email}</td>
-                  <td className="px-5 py-3 text-xs text-zinc-600 dark:text-zinc-400">{s.model}</td>
+                  <td className="px-5 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {s.models.map((m) => (
+                        <span key={m} className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                          {m.replace("claude-", "").replace(/-\d{8}$/, "")}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
                   <td className="px-5 py-3 text-right font-medium text-zinc-900 dark:text-zinc-50">
                     ${s.cost_usd.toFixed(4)}
                   </td>

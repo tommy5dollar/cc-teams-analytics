@@ -9,16 +9,19 @@ export interface ClientInfoStats {
   event_count: number;
 }
 
+export interface DailyDimension {
+  date: string;
+  dimension: string;
+  users: number;
+}
+
 export async function getClientInfo(days = 30): Promise<ClientInfoStats[]> {
   const result = await clickhouse.query({
     query: `
       SELECT
-        cc_version,
-        terminal_type,
-        os_type,
-        host_arch,
-        uniq(session_id)  AS session_count,
-        count()           AS event_count
+        cc_version, terminal_type, os_type, host_arch,
+        uniq(session_id) AS session_count,
+        count()          AS event_count
       FROM otel.events
       WHERE timestamp >= now() - INTERVAL {days:UInt32} DAY
         AND cc_version <> ''
@@ -29,19 +32,32 @@ export async function getClientInfo(days = 30): Promise<ClientInfoStats[]> {
     format: "JSONEachRow",
   });
   const rows = await result.json<{
-    cc_version: string;
-    terminal_type: string;
-    os_type: string;
-    host_arch: string;
-    session_count: string;
-    event_count: string;
+    cc_version: string; terminal_type: string; os_type: string;
+    host_arch: string; session_count: string; event_count: string;
   }>();
   return rows.map((r) => ({
-    cc_version: r.cc_version,
-    terminal_type: r.terminal_type,
-    os_type: r.os_type,
-    host_arch: r.host_arch,
-    session_count: parseInt(r.session_count),
-    event_count: parseInt(r.event_count),
+    cc_version: r.cc_version, terminal_type: r.terminal_type,
+    os_type: r.os_type, host_arch: r.host_arch,
+    session_count: parseInt(r.session_count), event_count: parseInt(r.event_count),
   }));
+}
+
+export async function getVersionOverTime(days = 30): Promise<DailyDimension[]> {
+  const result = await clickhouse.query({
+    query: `
+      SELECT
+        toString(toDate(timestamp)) AS date,
+        cc_version                  AS dimension,
+        uniq(user_email)            AS users
+      FROM otel.events
+      WHERE timestamp >= now() - INTERVAL {days:UInt32} DAY
+        AND cc_version <> ''
+      GROUP BY date, dimension
+      ORDER BY date ASC, users DESC
+    `,
+    query_params: { days },
+    format: "JSONEachRow",
+  });
+  const rows = await result.json<{ date: string; dimension: string; users: string }>();
+  return rows.map((r) => ({ date: r.date, dimension: r.dimension, users: parseInt(r.users) }));
 }

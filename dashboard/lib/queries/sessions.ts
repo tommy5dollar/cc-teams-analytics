@@ -3,13 +3,19 @@ import clickhouse from "@/lib/clickhouse";
 export interface SessionSummary {
   session_id: string;
   user_email: string;
-  model: string;
+  models: string[];
   started_at: string;
   ended_at: string;
   event_count: number;
   cost_usd: number;
   input_tokens: number;
   output_tokens: number;
+}
+
+export interface SessionModelCost {
+  model: string;
+  cost_usd: number;
+  api_calls: number;
 }
 
 export interface SessionEvent {
@@ -24,23 +30,21 @@ export interface SessionEvent {
   body: string;
 }
 
-export async function getRecentSessions(
-  limit = 50
-): Promise<SessionSummary[]> {
+export async function getRecentSessions(limit = 50): Promise<SessionSummary[]> {
   const result = await clickhouse.query({
     query: `
       SELECT
         session_id,
-        any(user_email)                                              AS user_email,
-        anyIf(model, model != '')                                    AS model,
-        toString(min(timestamp))                                     AS started_at,
-        toString(max(timestamp))                                     AS ended_at,
-        count()                                                      AS event_count,
-        sum(cost_usd)                                                AS cost_usd,
-        sum(input_tokens)                                            AS input_tokens,
-        sum(output_tokens)                                           AS output_tokens
+        any(user_email)                                   AS user_email,
+        groupUniqArrayIf(model, model <> '')              AS models,
+        toString(min(timestamp))                          AS started_at,
+        toString(max(timestamp))                          AS ended_at,
+        count()                                           AS event_count,
+        sum(cost_usd)                                     AS cost_usd,
+        sum(input_tokens)                                 AS input_tokens,
+        sum(output_tokens)                                AS output_tokens
       FROM otel.events
-      WHERE session_id != ''
+      WHERE session_id <> ''
       GROUP BY session_id
       ORDER BY started_at DESC
       LIMIT {limit:UInt32}
@@ -51,7 +55,7 @@ export async function getRecentSessions(
   const rows = await result.json<{
     session_id: string;
     user_email: string;
-    model: string;
+    models: string[];
     started_at: string;
     ended_at: string;
     event_count: string;
@@ -62,7 +66,7 @@ export async function getRecentSessions(
   return rows.map((r) => ({
     session_id: r.session_id,
     user_email: r.user_email,
-    model: r.model,
+    models: r.models,
     started_at: r.started_at,
     ended_at: r.ended_at,
     event_count: parseInt(r.event_count),
@@ -72,9 +76,31 @@ export async function getRecentSessions(
   }));
 }
 
-export async function getSessionEvents(
-  sessionId: string
-): Promise<SessionEvent[]> {
+export async function getSessionModelBreakdown(sessionId: string): Promise<SessionModelCost[]> {
+  const result = await clickhouse.query({
+    query: `
+      SELECT
+        model,
+        sum(cost_usd)  AS cost_usd,
+        count()        AS api_calls
+      FROM otel.events
+      WHERE session_id = {sessionId:String}
+        AND model <> ''
+      GROUP BY model
+      ORDER BY cost_usd DESC
+    `,
+    query_params: { sessionId },
+    format: "JSONEachRow",
+  });
+  const rows = await result.json<{ model: string; cost_usd: string; api_calls: string }>();
+  return rows.map((r) => ({
+    model: r.model,
+    cost_usd: parseFloat(r.cost_usd),
+    api_calls: parseInt(r.api_calls),
+  }));
+}
+
+export async function getSessionEvents(sessionId: string): Promise<SessionEvent[]> {
   const result = await clickhouse.query({
     query: `
       SELECT

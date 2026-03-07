@@ -1,4 +1,4 @@
-import { getSessionEvents } from "@/lib/queries/sessions";
+import { getSessionEvents, getSessionModelBreakdown } from "@/lib/queries/sessions";
 import SessionTimeline from "@/components/SessionTimeline";
 import Link from "next/link";
 
@@ -10,7 +10,10 @@ export default async function SessionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const events = await getSessionEvents(id).catch(() => []);
+  const [events, modelBreakdown] = await Promise.all([
+    getSessionEvents(id).catch(() => []),
+    getSessionModelBreakdown(id).catch(() => []),
+  ]);
 
   const totalCost = events.reduce((s, e) => s + e.cost_usd, 0);
   const totalInput = events.reduce((s, e) => s + e.input_tokens, 0);
@@ -35,11 +38,31 @@ export default async function SessionPage({
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Summary bar */}
-        <div className="mb-6 flex flex-wrap gap-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <Stat label="Events" value={String(events.length)} />
-          <Stat label="Cost" value={`$${totalCost.toFixed(4)}`} />
-          <Stat label="Input tokens" value={totalInput.toLocaleString()} />
-          <Stat label="Output tokens" value={totalOutput.toLocaleString()} />
+        <div className="mb-6 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex flex-wrap gap-6">
+            <Stat label="Events" value={String(events.length)} />
+            <Stat label="Total cost" value={`$${totalCost.toFixed(4)}`} />
+            <Stat label="Input tokens" value={totalInput.toLocaleString()} />
+            <Stat label="Output tokens" value={totalOutput.toLocaleString()} />
+          </div>
+          {modelBreakdown.length > 0 && (
+            <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+              <p className="mb-2 text-xs font-medium uppercase text-zinc-400">Cost by model</p>
+              <div className="flex flex-wrap gap-4">
+                {modelBreakdown.map((m) => (
+                  <div key={m.model}>
+                    <p className="font-mono text-xs text-zinc-500">
+                      {m.model.replace("claude-", "").replace(/-\d{8}$/, "")}
+                    </p>
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                      ${m.cost_usd.toFixed(4)}
+                      <span className="ml-1 text-xs font-normal text-zinc-400">{m.api_calls} calls</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mb-6">

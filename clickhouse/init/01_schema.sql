@@ -56,7 +56,9 @@ CREATE TABLE IF NOT EXISTS otel.events
     terminal_type         LowCardinality(String),
     os_type               LowCardinality(String),
     host_arch             LowCardinality(String),
-    speed                 LowCardinality(String)
+    speed                 LowCardinality(String),
+    mcp_server_name       LowCardinality(String),
+    mcp_tool_name         LowCardinality(String)
 )
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
@@ -88,5 +90,7 @@ SELECT
     LogAttributes['terminal.type']                          AS terminal_type,
     ResourceAttributes['os.type']                           AS os_type,
     ResourceAttributes['host.arch']                         AS host_arch,
-    LogAttributes['speed']                                  AS speed
+    LogAttributes['speed']                                  AS speed,
+    JSONExtractString(LogAttributes['tool_parameters'], 'mcp_server_name') AS mcp_server_name,
+    JSONExtractString(LogAttributes['tool_parameters'], 'mcp_tool_name')   AS mcp_tool_name
 FROM otel.otel_logs;
