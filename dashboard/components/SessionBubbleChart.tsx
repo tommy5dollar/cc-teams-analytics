@@ -58,8 +58,6 @@ function BubbleChart({
     return <p className="py-16 text-center text-sm text-zinc-400">No sessions in range</p>;
   }
 
-  const costs = sessions.map((s) => s.cost_usd);
-  const maxCost = Math.max(...costs);
   // Normalise bubble area: smallest ~40px, largest ~800px
   const zRange: [number, number] = [40, Math.max(200, Math.min(800, sessions.length * 20))];
 
@@ -98,7 +96,7 @@ function BubbleChart({
           onClick={(d: any) => onClickSession(d.session_id)}
           style={{ cursor: "pointer" }}
         >
-          {sessions.map((s, i) => (
+          {sessions.map((s) => (
             <Cell
               key={s.session_id}
               fill={colorByUser ? (userColorMap.get(s.user_email) ?? "#6366f1") : "#6366f1"}

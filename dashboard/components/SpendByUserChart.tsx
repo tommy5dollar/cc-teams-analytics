@@ -41,7 +41,7 @@ export default function SpendByUserChart({ data }: { data: UserStats[] }) {
               data={data}
               fill="#6366f1"
               fillOpacity={0.75}
-              onClick={(d: any) => router.push(`/users/${encodeURIComponent(d.user_email)}`)}
+              onClick={(d: { user_email: string }) => router.push(`/users/${encodeURIComponent(d.user_email)}`)}
               cursor="pointer"
             />
           </ScatterChart>

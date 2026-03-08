@@ -1,4 +1,8 @@
 import { Suspense } from "react";
+
+function Skeleton({ h }: { h: string }) {
+  return <div className={`${h} animate-pulse rounded-xl bg-zinc-100`} />;
+}
 import { parseDateRange } from "@/lib/queries/dateRange";
 import { getOverviewStats } from "@/lib/queries/overview";
 import { getUserStats } from "@/lib/queries/byUser";
@@ -43,10 +47,6 @@ export default async function DashboardPage({
   const versionOverTimeData = versionOverTime.status === "fulfilled" ? versionOverTime.value : [];
   const mcpToolsData        = mcpTools.status === "fulfilled" ? mcpTools.value : [];
   const skillsData          = skills.status === "fulfilled" ? skills.value : [];
-
-  const Skeleton = ({ h }: { h: string }) => (
-    <div className={`${h} animate-pulse rounded-xl bg-zinc-100`} />
-  );
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">

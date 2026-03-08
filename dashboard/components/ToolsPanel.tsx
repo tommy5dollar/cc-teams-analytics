@@ -53,7 +53,7 @@ function McpGrouped({ data }: { data: McpStats[] }) {
   function toggle(server: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(server) ? next.delete(server) : next.add(server);
+      if (next.has(server)) { next.delete(server); } else { next.add(server); }
       return next;
     });
   }
