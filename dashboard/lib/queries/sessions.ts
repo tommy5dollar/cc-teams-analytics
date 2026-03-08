@@ -8,6 +8,7 @@ export interface SessionSummary {
   started_at: string;
   ended_at: string;
   event_count: number;
+  prompt_count: number;
   cost_usd: number;
   input_tokens: number;
   output_tokens: number;
@@ -69,6 +70,7 @@ export async function getRecentSessions(dr: DateRange, limit = 50): Promise<Sess
         toString(min(timestamp))                          AS started_at,
         toString(max(timestamp))                          AS ended_at,
         count()                                           AS event_count,
+        countIf(event_name = 'user_prompt')               AS prompt_count,
         sum(cost_usd)                                     AS cost_usd,
         sum(input_tokens)                                 AS input_tokens,
         sum(output_tokens)                                AS output_tokens
@@ -89,18 +91,20 @@ export async function getRecentSessions(dr: DateRange, limit = 50): Promise<Sess
     started_at: string;
     ended_at: string;
     event_count: string;
+    prompt_count: string;
     cost_usd: string;
     input_tokens: string;
     output_tokens: string;
   }>();
   return rows.map((r) => ({
-    session_id: r.session_id,
-    user_email: r.user_email,
-    models: r.models,
-    started_at: r.started_at,
-    ended_at: r.ended_at,
-    event_count: parseInt(r.event_count),
-    cost_usd: parseFloat(r.cost_usd),
+    session_id:   r.session_id,
+    user_email:   r.user_email,
+    models:       r.models,
+    started_at:   r.started_at,
+    ended_at:     r.ended_at,
+    event_count:  parseInt(r.event_count),
+    prompt_count: parseInt(r.prompt_count),
+    cost_usd:     parseFloat(r.cost_usd),
     input_tokens: parseInt(r.input_tokens),
     output_tokens: parseInt(r.output_tokens),
   }));

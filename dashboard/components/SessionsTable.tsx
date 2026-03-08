@@ -28,6 +28,7 @@ export default function SessionsTable({
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Repo</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Models</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Cost</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Prompts</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Events</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Started</th>
               </tr>
@@ -58,6 +59,7 @@ export default function SessionsTable({
                   <td className="px-5 py-3 text-right font-medium text-zinc-900 dark:text-zinc-50">
                     ${s.cost_usd.toFixed(4)}
                   </td>
+                  <td className="px-5 py-3 text-right text-zinc-600 dark:text-zinc-400">{s.prompt_count}</td>
                   <td className="px-5 py-3 text-right text-zinc-600 dark:text-zinc-400">{s.event_count}</td>
                   <td className="px-5 py-3 text-xs text-zinc-500">
                     {s.started_at.slice(0, 16).replace("T", " ")}
