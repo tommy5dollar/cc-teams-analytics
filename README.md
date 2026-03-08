@@ -159,7 +159,7 @@ cd dashboard
 docker build -t cc-dashboard .
 ```
 
-Or use the provided GitHub Actions CI as a starting point — it builds and pushes to GHCR on every main push. See `.github/workflows/ci.yml`.
+A sample GitHub Actions deploy workflow (build image → push to GHCR → SSH deploy) is a straightforward addition — see the [Docker build-push-action docs](https://github.com/docker/build-push-action) for a starting point.
 
 ---
 
