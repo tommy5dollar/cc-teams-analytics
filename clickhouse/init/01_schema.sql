@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS otel.otel_logs
 ENGINE = MergeTree()
 PARTITION BY toDate(Timestamp)
 ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
+TTL toDateTime(Timestamp) + INTERVAL 2 YEAR
 SETTINGS index_granularity = 8192;
 
 -- Primary analytics table: one row per CC log event.

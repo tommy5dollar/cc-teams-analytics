@@ -1,0 +1,36 @@
+# Production overlay — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Requires .env with CLICKHOUSE_PASSWORD, OTLP_BEARER_TOKEN, OTEL_DOMAIN set.
+
+services:
+  clickhouse:
+    # No ports exposed — only reachable within the Docker network
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-otel}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD must be set}
+
+  otel-collector:
+    # Collector ports are NOT published — Caddy proxies to it internally
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      OTEL_DOMAIN: ${OTEL_DOMAIN:?OTEL_DOMAIN must be set}
+      OTLP_BEARER_TOKEN: ${OTLP_BEARER_TOKEN:?OTLP_BEARER_TOKEN must be set}
+    depends_on:
+      - otel-collector
+
+volumes:
+  caddy_data:
+  caddy_config:

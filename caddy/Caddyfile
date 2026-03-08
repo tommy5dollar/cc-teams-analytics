@@ -1,0 +1,16 @@
+{$OTEL_DOMAIN} {
+    # Health check — unauthenticated so uptime monitors can reach it
+    handle /health {
+        respond "ok" 200
+    }
+
+    # All OTLP endpoints require a valid bearer token
+    handle {
+        @no_auth {
+            not header Authorization "Bearer {$OTLP_BEARER_TOKEN}"
+        }
+        respond @no_auth "Unauthorized" 401
+
+        reverse_proxy otel-collector:4318
+    }
+}

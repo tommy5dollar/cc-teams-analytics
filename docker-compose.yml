@@ -21,6 +21,9 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     user: "1000:1000"
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
     volumes:
       - ./otel-collector/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
       - otel_data:/data
