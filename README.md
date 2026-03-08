@@ -1,32 +1,38 @@
 # cc-teams-analytics
 
-Analytics platform for Claude Code team telemetry. Collects OpenTelemetry data from CC clients, stores it in ClickHouse, and visualises it in a Next.js dashboard.
+Self-hosted analytics platform for [Claude Code](https://claude.ai/code) team telemetry. Collects OpenTelemetry data from CC clients, stores it in ClickHouse, and visualises it in a Next.js dashboard.
 
 ## Architecture
 
 ```
-CC clients  ──OTLP/HTTPS──►  Caddy (TLS)  ──►  otel-collector  ──►  ClickHouse
-                                                      │
-                                                 file/backup (zstd JSONL)
+CC clients  ──OTLP/HTTPS──►  Caddy (TLS + auth)  ──►  otel-collector  ──►  ClickHouse
+                                                              │
+                                                         file/backup (zstd JSONL)
+                                                              │
+                                                     Next.js dashboard
 ```
 
-- **OTel collector** — receives OTLP logs/metrics/traces, fans out to ClickHouse + local backup file
-- **ClickHouse** — stores raw events in `otel.events` via a materialised view on `otel.otel_logs`
-- **Dashboard** — Next.js app querying ClickHouse directly (server components, no separate API)
+- **Caddy** — terminates TLS, enforces bearer token auth on the OTLP endpoint
+- **OTel collector** — receives OTLP logs, fans out to ClickHouse + local backup file
+- **ClickHouse** — stores raw events in `otel.otel_logs`; a materialised view populates `otel.events` at insert time
+- **Dashboard** — Next.js 15 app querying ClickHouse directly (server components, no separate API)
 
 ---
 
 ## Local development
 
 ### Prerequisites
+
 - Docker + Docker Compose
-- Node.js 20+
+- Node.js 22+
 
 ### Start the stack
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
+
+This starts ClickHouse (port 8123) and the OTel collector (port 4318) with ports exposed for local use.
 
 ### Start the dashboard
 
@@ -53,6 +59,8 @@ export OTEL_LOG_TOOL_DETAILS=1
 
 ### Import historical data
 
+If you have existing CC telemetry JSONL files:
+
 ```bash
 cd import
 pip install clickhouse-connect zstandard
@@ -61,9 +69,7 @@ python load.py
 
 ---
 
-## Production — Stage 1: OTel collection & storage
-
-Goal: a hardened, publicly reachable OTLP endpoint backed by a durable ClickHouse instance, with no dashboard yet.
+## Production deployment
 
 ### 1. Provision a server
 
@@ -72,7 +78,6 @@ A single VPS is sufficient for a small team (≤50 engineers).
 Recommended: **Hetzner CAX21** (4 vCPU ARM, 8 GB RAM, 80 GB NVMe, ~€8/mo).
 
 ```bash
-# On the server after first login
 apt update && apt upgrade -y
 apt install -y docker.io docker-compose-plugin git ufw
 systemctl enable --now docker
@@ -85,66 +90,55 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw allow ssh
 ufw allow 80/tcp    # Caddy ACME challenge
-ufw allow 443/tcp   # OTLP over HTTPS (Caddy)
+ufw allow 443/tcp   # OTLP + dashboard over HTTPS
 ufw enable
 ```
 
-ClickHouse and the raw collector ports (4317/4318) must **not** be open publicly.
+ClickHouse (8123/9000) and the raw collector ports (4317/4318) must **not** be open publicly.
 
-### 3. Clone the repo
+### 3. Clone and configure
 
 ```bash
-git clone https://github.com/tommy5dollar/cc-teams-analytics.git
+git clone https://github.com/your-org/cc-teams-analytics.git
 cd cc-teams-analytics
-```
-
-### 4. Create the environment file
-
-```bash
 cp .env.example .env
 ```
 
 Edit `.env`:
 
 ```env
-# ClickHouse
 CLICKHOUSE_USER=otel
 CLICKHOUSE_PASSWORD=<strong-random-password>
-
-# OTLP bearer token — clients must send this in the Authorization header
 OTLP_BEARER_TOKEN=<strong-random-token>
-
-# Domain Caddy will provision TLS for
 OTEL_DOMAIN=otel.yourcompany.com
 ```
 
 Generate secure values:
+
 ```bash
-openssl rand -hex 32   # run twice — once for password, once for token
+openssl rand -hex 32   # run twice
 ```
 
-### 5. Deploy
+### 4. Deploy
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-Caddy will automatically obtain a TLS certificate for `OTEL_DOMAIN` on first start.
+Caddy will automatically obtain a TLS certificate on first start.
 
-### 6. Verify
+### 5. Verify
 
 ```bash
-# Collector is reachable and accepting data
-curl -s https://otel.yourcompany.com/health | jq .
+curl -s https://otel.yourcompany.com/health
 
-# ClickHouse has data
 docker compose exec clickhouse \
   clickhouse-client --query "SELECT count() FROM otel.events"
 ```
 
-### 7. Point Claude Code at the production endpoint
+### 6. Point Claude Code at the production endpoint
 
-Add to your shell profile (or distribute via your team's dotfiles/MDM):
+Distribute to your team (via dotfiles, MDM, or onboarding docs):
 
 ```bash
 export CLAUDE_CODE_ENABLE_TELEMETRY=1
@@ -156,32 +150,64 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer <OTLP_BEARER_TOKEN>"
 export OTEL_LOG_TOOL_DETAILS=1
 ```
 
+### 7. Deploy the dashboard
+
+Build the Docker image and run it alongside ClickHouse:
+
+```bash
+cd dashboard
+docker build -t cc-dashboard .
+```
+
+Or use the provided GitHub Actions CI as a starting point — it builds and pushes to GHCR on every main push. See `.github/workflows/ci.yml`.
+
 ---
 
-## Production — Stage 2: Dashboard (coming soon)
+## Dashboard features
 
-- Deploy the Next.js dashboard behind Caddy on the same server (or separately)
-- Add basic auth or SSO in front of the dashboard
-- Set up CI/CD via GitHub Actions → ghcr.io → SSH deploy
+- **Overview** — cost, tokens, active users, sessions; spend-by-user scatter chart
+- **Adoption & environment** — daily active users by model, CC version, terminal type, OS
+- **MCP tools** — usage grouped by server, accept rates, per-tool breakdown
+- **Skills invoked** — counts of slash commands used across the team
+- **Per-engineer page** — cost over time by model, tools, sessions with inferred repo
+- **Session drilldown** — full event timeline with tool details, bash commands, errors
+
+### Repo inference
+
+The dashboard attempts to infer which repository each session was running in, based on bash command paths and repo-root file markers (`.git`, `package.json`, `go.mod`, `Cargo.toml`, etc.).
+
+Run the inference job from the admin page at `/admin`, or call the API directly:
+
+```bash
+# Incremental — only processes sessions not yet inferred at the current logic version
+curl -X POST https://your-dashboard/api/admin/infer-repos
+
+# Full reprocess — reruns over all sessions
+curl -X POST https://your-dashboard/api/admin/infer-repos \
+  -H "Content-Type: application/json" \
+  -d '{"full": true}'
+```
+
+Bump `LOGIC_VERSION` in `dashboard/lib/inferRepo.ts` after improving extraction logic, then run incremental to backfill stale sessions.
 
 ---
 
 ## Data retention
 
-ClickHouse TTL is set to **90 days** on `otel.events` by default. To change it:
+ClickHouse TTL is set to **2 years** on `otel.otel_logs` by default. To change it:
 
 ```sql
-ALTER TABLE otel.events MODIFY TTL timestamp + INTERVAL 180 DAY;
+ALTER TABLE otel.otel_logs MODIFY TTL toDateTime(Timestamp) + INTERVAL 1 YEAR;
+ALTER TABLE otel.events MODIFY TTL toDateTime(timestamp) + INTERVAL 1 YEAR;
 ```
 
 ---
 
 ## Backups
 
-The OTel collector writes a zstd-compressed JSONL backup to the `otel_data` Docker volume
-(`/data/backup.jsonl.*`). This can be used to replay data into a new ClickHouse instance.
+The OTel collector writes a zstd-compressed JSONL backup to the `otel_data` Docker volume. This can be used to replay data into a fresh ClickHouse instance via `import/load.py`.
 
-For off-server backups, mount the volume and sync to S3/Backblaze with a cron job:
+For off-server backups, sync the volume to object storage:
 
 ```bash
 # Example: daily sync to S3
@@ -196,5 +222,4 @@ For off-server backups, mount the volume and sync to S3/Backblaze with a cron jo
 
 ## Monitoring
 
-The collector exposes a health check endpoint. A simple uptime monitor (UptimeRobot, BetterUptime)
-on `https://otel.yourcompany.com/health` will alert you if the pipeline goes down.
+The collector exposes a health check at `https://otel.yourcompany.com/health`. Point an uptime monitor (UptimeRobot, BetterUptime, etc.) at it to alert on pipeline outages.
