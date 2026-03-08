@@ -2,8 +2,9 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { parseDateRange } from "@/lib/queries/dateRange";
-import { getUserOverview, getUserCostOverTime, getUserToolStats, getUserSessions } from "@/lib/queries/user";
-import { getMcpStats } from "@/lib/queries/tools";
+import { getUserOverview, getUserCostOverTime, getUserSessions } from "@/lib/queries/user";
+import { getMcpStats, getSkillStats } from "@/lib/queries/tools";
+import { getSessionRepos } from "@/lib/queries/sessions";
 import UserCostChart from "@/components/UserCostChart";
 import SessionBubbleChart from "@/components/SessionBubbleChart";
 import SessionsTable from "@/components/SessionsTable";
@@ -40,13 +41,15 @@ export default async function UserPage({
   const sp = await searchParams;
   const dr = parseDateRange(sp);
 
-  const [overview, costOverTime, tools, sessions, mcpTools] = await Promise.all([
+  const [overview, costOverTime, sessions, mcpTools, skills] = await Promise.all([
     getUserOverview(email, dr),
     getUserCostOverTime(email, dr),
-    getUserToolStats(email, dr),
     getUserSessions(email, dr, 100),
     getMcpStats(dr, email),
+    getSkillStats(dr, email),
   ]);
+
+  const sessionRepos = await getSessionRepos(sessions.map((s) => s.session_id));
 
   if (!overview) notFound();
 
@@ -96,13 +99,13 @@ export default async function UserPage({
         <UserCostChart data={costOverTime} />
 
         {/* Tools */}
-        <ToolsPanel tools={tools} mcpTools={mcpTools} />
+        <ToolsPanel mcpTools={mcpTools} skills={skills} />
 
         {/* Session bubble chart */}
-        <SessionBubbleChart sessions={sessions} />
+        <SessionBubbleChart sessions={sessions} email={email} />
 
         {/* Sessions table */}
-        <SessionsTable data={sessions} />
+        <SessionsTable data={sessions} email={email} repos={sessionRepos} />
       </main>
     </div>
   );

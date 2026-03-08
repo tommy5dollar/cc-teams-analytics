@@ -1,6 +1,33 @@
 import clickhouse from "@/lib/clickhouse";
 import { type DateRange, DATE_CONDITION, dateParams } from "@/lib/queries/dateRange";
 
+export interface SkillStats {
+  skill_name: string;
+  uses: number;
+}
+
+export async function getSkillStats(dr: DateRange, email?: string): Promise<SkillStats[]> {
+  const result = await clickhouse.query({
+    query: `
+      SELECT
+        JSONExtractString(LogAttributes['tool_parameters'], 'skill_name') AS skill_name,
+        count() AS uses
+      FROM otel.otel_logs
+      WHERE Timestamp >= toDateTime({dr_from:String}) AND Timestamp < toDateTime({dr_to:String}) + INTERVAL 1 DAY
+        AND LogAttributes['tool_name'] = 'Skill'
+        AND LogAttributes['event.name'] = 'tool_result'
+        ${email !== undefined ? "AND LogAttributes['user.email'] = {email:String}" : ""}
+      GROUP BY skill_name
+      HAVING skill_name <> ''
+      ORDER BY uses DESC
+    `,
+    query_params: { ...dateParams(dr), ...(email !== undefined ? { email } : {}) },
+    format: "JSONEachRow",
+  });
+  const rows = await result.json<{ skill_name: string; uses: string }>();
+  return rows.map((r) => ({ skill_name: r.skill_name, uses: parseInt(r.uses) }));
+}
+
 export interface ToolStats {
   tool_name: string;
   uses: number;

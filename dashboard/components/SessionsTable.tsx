@@ -1,7 +1,15 @@
 import Link from "next/link";
 import type { SessionSummary } from "@/lib/queries/sessions";
 
-export default function SessionsTable({ data }: { data: SessionSummary[] }) {
+export default function SessionsTable({
+  data,
+  email,
+  repos = new Map(),
+}: {
+  data: SessionSummary[];
+  email: string;
+  repos?: Map<string, string>;
+}) {
   return (
     <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
@@ -17,7 +25,7 @@ export default function SessionsTable({ data }: { data: SessionSummary[] }) {
             <thead>
               <tr className="border-b border-zinc-100 dark:border-zinc-800">
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Session</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">User</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Repo</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-zinc-500 uppercase">Models</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Cost</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-zinc-500 uppercase">Events</th>
@@ -29,13 +37,15 @@ export default function SessionsTable({ data }: { data: SessionSummary[] }) {
                 <tr key={s.session_id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                   <td className="px-5 py-3">
                     <Link
-                      href={`/sessions/${encodeURIComponent(s.session_id)}`}
+                      href={`/users/${encodeURIComponent(email)}/sessions/${encodeURIComponent(s.session_id)}`}
                       className="font-mono text-xs text-indigo-600 hover:underline dark:text-indigo-400"
                     >
                       {s.session_id.slice(0, 12)}…
                     </Link>
                   </td>
-                  <td className="px-5 py-3 text-xs text-zinc-600 dark:text-zinc-400">{s.user_email}</td>
+                  <td className="px-5 py-3 text-xs text-zinc-500 dark:text-zinc-400">
+                    {repos.get(s.session_id) ?? <span className="text-zinc-300 dark:text-zinc-600">—</span>}
+                  </td>
                   <td className="px-5 py-3">
                     <div className="flex flex-wrap gap-1">
                       {s.models.map((m) => (

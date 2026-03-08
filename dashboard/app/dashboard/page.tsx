@@ -4,7 +4,7 @@ import { getOverviewStats } from "@/lib/queries/overview";
 import { getUserStats } from "@/lib/queries/byUser";
 import { getModelUsersOverTime } from "@/lib/queries/byModel";
 import { getClientInfo, getVersionOverTime } from "@/lib/queries/clientInfo";
-import { getToolStats, getMcpStats } from "@/lib/queries/tools";
+import { getMcpStats, getSkillStats } from "@/lib/queries/tools";
 import OverviewCards from "@/components/OverviewCards";
 import SpendByUserChart from "@/components/SpendByUserChart";
 import UserBreakdownTable from "@/components/UserBreakdownTable";
@@ -24,15 +24,15 @@ export default async function DashboardPage({
 
   const [
     overview, users, modelUsersOverTime,
-    clientInfo, versionOverTime, tools, mcpTools,
+    clientInfo, versionOverTime, mcpTools, skills,
   ] = await Promise.allSettled([
     getOverviewStats(dr),
     getUserStats(dr),
     getModelUsersOverTime(dr),
     getClientInfo(dr),
     getVersionOverTime(dr),
-    getToolStats(dr),
     getMcpStats(dr),
+    getSkillStats(dr),
   ]);
 
   const overviewData        = overview.status === "fulfilled" ? overview.value
@@ -41,8 +41,8 @@ export default async function DashboardPage({
   const modelUsersData      = modelUsersOverTime.status === "fulfilled" ? modelUsersOverTime.value : [];
   const clientInfoData      = clientInfo.status === "fulfilled" ? clientInfo.value : [];
   const versionOverTimeData = versionOverTime.status === "fulfilled" ? versionOverTime.value : [];
-  const toolsData           = tools.status === "fulfilled" ? tools.value : [];
   const mcpToolsData        = mcpTools.status === "fulfilled" ? mcpTools.value : [];
+  const skillsData          = skills.status === "fulfilled" ? skills.value : [];
 
   const Skeleton = ({ h }: { h: string }) => (
     <div className={`${h} animate-pulse rounded-xl bg-zinc-100`} />
@@ -74,11 +74,11 @@ export default async function DashboardPage({
         </Suspense>
 
         <Suspense fallback={<Skeleton h="h-64" />}>
-          <ToolsPanel tools={toolsData} mcpTools={mcpToolsData} />
+          <ClientInfoTabs data={clientInfoData} versionOverTime={versionOverTimeData} modelUsersOverTime={modelUsersData} />
         </Suspense>
 
         <Suspense fallback={<Skeleton h="h-64" />}>
-          <ClientInfoTabs data={clientInfoData} versionOverTime={versionOverTimeData} modelUsersOverTime={modelUsersData} />
+          <ToolsPanel mcpTools={mcpToolsData} skills={skillsData} />
         </Suspense>
 
         <Suspense fallback={<Skeleton h="h-64" />}>

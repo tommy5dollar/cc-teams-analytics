@@ -113,7 +113,7 @@ function BubbleChart({
   );
 }
 
-export default function SessionBubbleChart({ sessions }: { sessions: SessionSummary[] }) {
+export default function SessionBubbleChart({ sessions, email }: { sessions: SessionSummary[]; email: string }) {
   const router = useRouter();
   const userColorMap = new Map(
     Array.from(new Set(sessions.map((s) => s.user_email))).map((u, i) => [u, USER_COLORS[i % USER_COLORS.length]])
@@ -132,7 +132,7 @@ export default function SessionBubbleChart({ sessions }: { sessions: SessionSumm
           sessions={enriched}
           colorByUser={false}
           userColorMap={userColorMap}
-          onClickSession={(id) => router.push(`/sessions/${encodeURIComponent(id)}`)}
+          onClickSession={(id) => router.push(`/users/${encodeURIComponent(email)}/sessions/${encodeURIComponent(id)}`)}
         />
       </div>
     </div>
