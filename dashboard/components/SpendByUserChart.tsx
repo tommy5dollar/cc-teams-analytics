@@ -41,7 +41,8 @@ export default function SpendByUserChart({ data }: { data: UserStats[] }) {
               data={data}
               fill="#6366f1"
               fillOpacity={0.75}
-              onClick={(d: { user_email: string }) => router.push(`/users/${encodeURIComponent(d.user_email)}`)}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onClick={(d: any) => router.push(`/users/${encodeURIComponent(d.user_email)}`)}
               cursor="pointer"
             />
           </ScatterChart>
