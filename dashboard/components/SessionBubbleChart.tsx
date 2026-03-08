@@ -113,42 +113,24 @@ function BubbleChart({
   );
 }
 
-const TAB = "px-3 py-1.5 text-sm rounded-md transition-colors text-zinc-500 hover:text-zinc-700 " +
-  "dark:hover:text-zinc-300 data-[active=true]:bg-white data-[active=true]:text-zinc-900 " +
-  "data-[active=true]:shadow-sm dark:data-[active=true]:bg-zinc-800 dark:data-[active=true]:text-zinc-50";
-
 export default function SessionBubbleChart({ sessions }: { sessions: SessionSummary[] }) {
   const router = useRouter();
-  const users = Array.from(new Set(sessions.map((s) => s.user_email))).sort();
-  const userColorMap = new Map(users.map((u, i) => [u, USER_COLORS[i % USER_COLORS.length]]));
+  const userColorMap = new Map(
+    Array.from(new Set(sessions.map((s) => s.user_email))).map((u, i) => [u, USER_COLORS[i % USER_COLORS.length]])
+  );
 
   const enriched = sessions.map((s) => ({ ...s, _ts: new Date(s.started_at).getTime() }));
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
-        <div>
-          <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Sessions over time</h2>
-          <p className="text-xs text-zinc-400">Bubble size and Y-axis proportional to cost</p>
-        </div>
-        <div className="flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/60">
-          <span data-active="true" className={TAB}>All users</span>
-          {users.map((u) => (
-            <a
-              key={u}
-              href={`/users/${encodeURIComponent(u)}`}
-              className={TAB}
-              data-active="false"
-            >
-              {u.split("@")[0]} ↗
-            </a>
-          ))}
-        </div>
+      <div className="border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
+        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Sessions over time</h2>
+        <p className="text-xs text-zinc-400">Bubble size and Y-axis proportional to cost</p>
       </div>
       <div className="p-4">
         <BubbleChart
           sessions={enriched}
-          colorByUser={users.length > 1}
+          colorByUser={false}
           userColorMap={userColorMap}
           onClickSession={(id) => router.push(`/sessions/${encodeURIComponent(id)}`)}
         />

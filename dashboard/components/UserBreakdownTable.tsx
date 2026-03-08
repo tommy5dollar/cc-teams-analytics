@@ -12,7 +12,7 @@ export default function UserBreakdownTable({ data }: { data: UserStats[] }) {
     <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       <div className="border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
         <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          User breakdown (30d)
+          User breakdown
         </h2>
       </div>
       {data.length === 0 ? (

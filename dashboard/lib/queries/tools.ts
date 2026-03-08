@@ -1,4 +1,5 @@
 import clickhouse from "@/lib/clickhouse";
+import { type DateRange, DATE_CONDITION, dateParams } from "@/lib/queries/dateRange";
 
 export interface ToolStats {
   tool_name: string;
@@ -16,7 +17,7 @@ export interface McpStats {
   accept_rate: number;
 }
 
-export async function getToolStats(days = 30): Promise<ToolStats[]> {
+export async function getToolStats(dr: DateRange): Promise<ToolStats[]> {
   const result = await clickhouse.query({
     query: `
       SELECT
@@ -29,29 +30,29 @@ export async function getToolStats(days = 30): Promise<ToolStats[]> {
           nullIf(countIf(event_name = 'tool_decision' AND decision <> ''), 0)
         , 1)                                                                                AS accept_rate
       FROM otel.events
-      WHERE timestamp >= now() - INTERVAL {days:UInt32} DAY
+      WHERE ${DATE_CONDITION}
         AND tool_name <> ''
         AND tool_name <> 'mcp_tool'
       GROUP BY tool_name
       ORDER BY uses DESC
       LIMIT 50
     `,
-    query_params: { days },
+    query_params: dateParams(dr),
     format: "JSONEachRow",
   });
   const rows = await result.json<{
     tool_name: string; uses: string; accepts: string; rejects: string; accept_rate: string | null;
   }>();
   return rows.map((r) => ({
-    tool_name: r.tool_name,
-    uses: parseInt(r.uses),
-    accepts: parseInt(r.accepts),
-    rejects: parseInt(r.rejects),
+    tool_name:   r.tool_name,
+    uses:        parseInt(r.uses),
+    accepts:     parseInt(r.accepts),
+    rejects:     parseInt(r.rejects),
     accept_rate: parseFloat(r.accept_rate ?? "0"),
   }));
 }
 
-export async function getMcpStats(days = 30): Promise<McpStats[]> {
+export async function getMcpStats(dr: DateRange, email?: string): Promise<McpStats[]> {
   const result = await clickhouse.query({
     query: `
       SELECT
@@ -64,12 +65,13 @@ export async function getMcpStats(days = 30): Promise<McpStats[]> {
           nullIf(countIf(event_name = 'tool_decision' AND decision <> ''), 0)
         , 1)                                                                                AS accept_rate
       FROM otel.events
-      WHERE timestamp >= now() - INTERVAL {days:UInt32} DAY
+      WHERE ${DATE_CONDITION}
         AND mcp_server_name <> ''
+        ${email !== undefined ? "AND user_email = {email:String}" : ""}
       GROUP BY mcp_server_name, mcp_tool_name
       ORDER BY uses DESC
     `,
-    query_params: { days },
+    query_params: { ...dateParams(dr), ...(email !== undefined ? { email } : {}) },
     format: "JSONEachRow",
   });
   const rows = await result.json<{
@@ -77,9 +79,9 @@ export async function getMcpStats(days = 30): Promise<McpStats[]> {
   }>();
   return rows.map((r) => ({
     mcp_server_name: r.mcp_server_name,
-    mcp_tool_name: r.mcp_tool_name,
-    uses: parseInt(r.uses),
-    accepts: parseInt(r.accepts),
-    accept_rate: parseFloat(r.accept_rate ?? "0"),
+    mcp_tool_name:   r.mcp_tool_name,
+    uses:            parseInt(r.uses),
+    accepts:         parseInt(r.accepts),
+    accept_rate:     parseFloat(r.accept_rate ?? "0"),
   }));
 }

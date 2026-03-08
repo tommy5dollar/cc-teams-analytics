@@ -1,4 +1,5 @@
 import clickhouse from "@/lib/clickhouse";
+import { type DateRange, DATE_CONDITION, dateParams } from "@/lib/queries/dateRange";
 
 export interface SessionSummary {
   session_id: string;
@@ -32,7 +33,7 @@ export interface SessionEvent {
   body: string;
 }
 
-export async function getRecentSessions(limit = 50): Promise<SessionSummary[]> {
+export async function getRecentSessions(dr: DateRange, limit = 50): Promise<SessionSummary[]> {
   const result = await clickhouse.query({
     query: `
       SELECT
@@ -46,12 +47,13 @@ export async function getRecentSessions(limit = 50): Promise<SessionSummary[]> {
         sum(input_tokens)                                 AS input_tokens,
         sum(output_tokens)                                AS output_tokens
       FROM otel.events
-      WHERE session_id <> ''
+      WHERE ${DATE_CONDITION}
+        AND session_id <> ''
       GROUP BY session_id
       ORDER BY started_at DESC
       LIMIT {limit:UInt32}
     `,
-    query_params: { limit },
+    query_params: { ...dateParams(dr), limit },
     format: "JSONEachRow",
   });
   const rows = await result.json<{

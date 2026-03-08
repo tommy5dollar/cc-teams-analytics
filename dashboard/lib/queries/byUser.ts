@@ -1,4 +1,5 @@
 import clickhouse from "@/lib/clickhouse";
+import { type DateRange, DATE_CONDITION, dateParams } from "@/lib/queries/dateRange";
 
 export interface UserStats {
   user_email: string;
@@ -11,7 +12,7 @@ export interface UserStats {
   event_count: number;
 }
 
-export async function getUserStats(days = 30): Promise<UserStats[]> {
+export async function getUserStats(dr: DateRange): Promise<UserStats[]> {
   const result = await clickhouse.query({
     query: `
       SELECT
@@ -24,13 +25,13 @@ export async function getUserStats(days = 30): Promise<UserStats[]> {
         uniq(session_id)             AS session_count,
         count()                      AS event_count
       FROM otel.events
-      WHERE timestamp >= now() - INTERVAL {days:UInt32} DAY
+      WHERE ${DATE_CONDITION}
         AND user_email <> ''
       GROUP BY user_email
       ORDER BY cost_usd DESC
       LIMIT 100
     `,
-    query_params: { days },
+    query_params: dateParams(dr),
     format: "JSONEachRow",
   });
   const rows = await result.json<{
@@ -44,13 +45,13 @@ export async function getUserStats(days = 30): Promise<UserStats[]> {
     event_count: string;
   }>();
   return rows.map((r) => ({
-    user_email: r.user_email,
-    cost_usd: parseFloat(r.cost_usd),
-    input_tokens: parseInt(r.input_tokens),
-    output_tokens: parseInt(r.output_tokens),
-    cache_read_tokens: parseInt(r.cache_read_tokens),
+    user_email:            r.user_email,
+    cost_usd:              parseFloat(r.cost_usd),
+    input_tokens:          parseInt(r.input_tokens),
+    output_tokens:         parseInt(r.output_tokens),
+    cache_read_tokens:     parseInt(r.cache_read_tokens),
     cache_creation_tokens: parseInt(r.cache_creation_tokens),
-    session_count: parseInt(r.session_count),
-    event_count: parseInt(r.event_count),
+    session_count:         parseInt(r.session_count),
+    event_count:           parseInt(r.event_count),
   }));
 }

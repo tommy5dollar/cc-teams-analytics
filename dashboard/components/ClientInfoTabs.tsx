@@ -73,23 +73,10 @@ const TAB = "inline-flex items-center px-3 py-1.5 text-sm rounded-md transition-
 interface Props {
   data: ClientInfoStats[];
   versionOverTime: DailyDimension[];
+  modelUsersOverTime: DailyDimension[];
 }
 
-export default function ClientInfoTabs({ data, versionOverTime }: Props) {
-  // aggregate per version for table
-  const byVersion = data.reduce<Record<string, { session_count: number; event_count: number }>>(
-    (acc, r) => {
-      if (!acc[r.cc_version]) acc[r.cc_version] = { session_count: 0, event_count: 0 };
-      acc[r.cc_version].session_count += r.session_count;
-      acc[r.cc_version].event_count += r.event_count;
-      return acc;
-    },
-    {}
-  );
-  const versionRows = Object.entries(byVersion)
-    .map(([cc_version, v]) => ({ cc_version, ...v }))
-    .sort((a, b) => b.event_count - a.event_count);
-
+export default function ClientInfoTabs({ data, versionOverTime, modelUsersOverTime }: Props) {
   const byTerminal = data.reduce<Record<string, { event_count: number }>>(
     (acc, r) => {
       const k = r.terminal_type || "unknown";
@@ -120,9 +107,10 @@ export default function ClientInfoTabs({ data, versionOverTime }: Props) {
     <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       <Tabs.Root defaultValue="version">
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3 dark:border-zinc-800">
-          <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Client environment</h2>
+          <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Adoption &amp; environment</h2>
           <Tabs.List className="flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/60">
             <Tabs.Trigger value="version" className={TAB}>Version</Tabs.Trigger>
+            <Tabs.Trigger value="model" className={TAB}>Model</Tabs.Trigger>
             <Tabs.Trigger value="terminal" className={TAB}>Terminal</Tabs.Trigger>
             <Tabs.Trigger value="os" className={TAB}>OS + Arch</Tabs.Trigger>
           </Tabs.List>
@@ -132,11 +120,11 @@ export default function ClientInfoTabs({ data, versionOverTime }: Props) {
           <div className="p-5">
             <AdoptionChart title="Daily active users by CC version" data={versionOverTime} height={200} />
           </div>
-          <div className="overflow-x-auto">
-            <SimpleTable
-              rows={versionRows}
-              cols={[{ key: "cc_version", label: "Version", mono: true }]}
-            />
+        </Tabs.Content>
+
+        <Tabs.Content value="model">
+          <div className="p-5">
+            <AdoptionChart title="Daily active users by model" data={modelUsersOverTime} height={200} />
           </div>
         </Tabs.Content>
 

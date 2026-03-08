@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getModelStats } from "@/lib/queries/byModel";
+import { daysRange } from "@/lib/queries/dateRange";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const days = Math.min(365, Math.max(1, parseInt(searchParams.get("days") ?? "30")));
   try {
-    const data = await getModelStats(days);
+    const data = await getModelStats(daysRange(days));
     return NextResponse.json(data);
   } catch (err) {
     console.error("by-model query failed:", err);

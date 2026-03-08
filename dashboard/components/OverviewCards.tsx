@@ -23,7 +23,7 @@ function Card({
       <p className="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-50">{value}</p>
       {(sub || trend) && (
         <p className="mt-1 text-xs text-zinc-400">
-          {trend && <span>{trend} vs last month</span>}
+          {trend && <span>{trend} vs prior period</span>}
           {sub && !trend && <span>{sub}</span>}
         </p>
       )}
@@ -35,9 +35,9 @@ export default function OverviewCards({ data }: { data: OverviewStats }) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       <Card
-        label="Cost this month"
-        value={`$${data.costThisMonth.toFixed(2)}`}
-        trend={pctChange(data.costThisMonth, data.costLastMonth)}
+        label="Cost"
+        value={`$${data.costInRange.toFixed(2)}`}
+        trend={pctChange(data.costInRange, data.costPriorRange)}
       />
       <Card
         label="Total tokens"

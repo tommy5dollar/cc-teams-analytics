@@ -1,11 +1,14 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getUserOverview, getUserModelStats, getUserToolStats, getUserSessions } from "@/lib/queries/user";
-import ModelUsageChart from "@/components/ModelUsageChart";
+import { parseDateRange } from "@/lib/queries/dateRange";
+import { getUserOverview, getUserCostOverTime, getUserToolStats, getUserSessions } from "@/lib/queries/user";
+import { getMcpStats } from "@/lib/queries/tools";
+import UserCostChart from "@/components/UserCostChart";
 import SessionBubbleChart from "@/components/SessionBubbleChart";
 import SessionsTable from "@/components/SessionsTable";
 import ToolsPanel from "@/components/ToolsPanel";
-import { getMcpStats } from "@/lib/queries/tools";
+import TimeRangePicker from "@/components/TimeRangePicker";
 
 export const dynamic = "force-dynamic";
 
@@ -27,29 +30,25 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
 
 export default async function UserPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ email: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { email: encodedEmail } = await params;
   const email = decodeURIComponent(encodedEmail);
+  const sp = await searchParams;
+  const dr = parseDateRange(sp);
 
-  const [overview, models, tools, sessions] = await Promise.all([
-    getUserOverview(email, 90),
-    getUserModelStats(email, 90),
-    getUserToolStats(email, 90),
-    getUserSessions(email, 100),
+  const [overview, costOverTime, tools, sessions, mcpTools] = await Promise.all([
+    getUserOverview(email, dr),
+    getUserCostOverTime(email, dr),
+    getUserToolStats(email, dr),
+    getUserSessions(email, dr, 100),
+    getMcpStats(dr, email),
   ]);
 
-  // MCP stats filtered to this user
-  const mcpResult = await getMcpStats(90).catch(() => []);
-  // getMcpStats doesn't filter by user — for now pass empty; real fix is adding user filter
-  const mcpTools = mcpResult;
-
   if (!overview) notFound();
-
-  const activeDays = Math.round(
-    (new Date(overview.last_seen).getTime() - new Date(overview.first_seen).getTime()) / 86_400_000
-  );
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -61,12 +60,18 @@ export default async function UserPage({
           >
             ← Back to dashboard
           </Link>
-          <h1 className="mt-1 text-xl font-semibold text-zinc-900 dark:text-zinc-50">{email}</h1>
-          <p className="mt-0.5 text-sm text-zinc-500">
-            Active {activeDays > 0 ? `over ${activeDays} days` : "today"} ·
-            first seen {overview.first_seen.slice(0, 10)} ·
-            last seen {overview.last_seen.slice(0, 10)}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">{email}</h1>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                first seen {overview.first_seen.slice(0, 10)} ·
+                last seen {overview.last_seen.slice(0, 10)}
+              </p>
+            </div>
+            <Suspense>
+              <TimeRangePicker current={dr} />
+            </Suspense>
+          </div>
         </div>
       </header>
 
@@ -87,14 +92,14 @@ export default async function UserPage({
           />
         </div>
 
-        {/* Session bubble chart */}
-        <SessionBubbleChart sessions={sessions} />
-
-        {/* Model breakdown */}
-        <ModelUsageChart data={models} />
+        {/* Cost over time by model */}
+        <UserCostChart data={costOverTime} />
 
         {/* Tools */}
         <ToolsPanel tools={tools} mcpTools={mcpTools} />
+
+        {/* Session bubble chart */}
+        <SessionBubbleChart sessions={sessions} />
 
         {/* Sessions table */}
         <SessionsTable data={sessions} />
