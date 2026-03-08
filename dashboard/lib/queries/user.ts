@@ -144,6 +144,48 @@ export async function getUserToolStats(email: string, dr: DateRange): Promise<To
   }));
 }
 
+export interface HourlyActivity {
+  hour: number;
+  event_count: number;
+  prompt_count: number;
+}
+
+export async function getUserActivityByHour(email: string, dr: DateRange): Promise<HourlyActivity[]> {
+  const result = await clickhouse.query({
+    query: `
+      SELECT
+        toHour(timestamp)                   AS hour,
+        count()                             AS event_count,
+        countIf(event_name = 'user_prompt') AS prompt_count
+      FROM otel.events
+      WHERE user_email = {email:String}
+        AND ${DATE_CONDITION}
+      GROUP BY hour
+      ORDER BY hour ASC
+    `,
+    query_params: { email, ...dateParams(dr) },
+    format: "JSONEachRow",
+  });
+  const rows = await result.json<{ hour: string; event_count: string; prompt_count: string }>();
+  if (rows.length === 0) return [];
+
+  const byHour = new Map(rows.map((r) => [
+    parseInt(r.hour),
+    { event_count: parseInt(r.event_count), prompt_count: parseInt(r.prompt_count) },
+  ]));
+
+  const minHour = Math.min(...byHour.keys());
+  const maxHour = Math.max(...byHour.keys());
+
+  // Zero-fill gaps between first and last data point
+  const filled: HourlyActivity[] = [];
+  for (let h = minHour; h <= maxHour; h++) {
+    const d = byHour.get(h);
+    filled.push({ hour: h, event_count: d?.event_count ?? 0, prompt_count: d?.prompt_count ?? 0 });
+  }
+  return filled;
+}
+
 export async function getUserSessions(email: string, dr: DateRange, limit = 100): Promise<SessionSummary[]> {
   const result = await clickhouse.query({
     query: `

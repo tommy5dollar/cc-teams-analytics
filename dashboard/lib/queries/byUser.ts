@@ -9,6 +9,7 @@ export interface UserStats {
   cache_read_tokens: number;
   cache_creation_tokens: number;
   session_count: number;
+  prompt_count: number;
   event_count: number;
 }
 
@@ -23,6 +24,7 @@ export async function getUserStats(dr: DateRange): Promise<UserStats[]> {
         sum(cache_read_tokens)       AS cache_read_tokens,
         sum(cache_creation_tokens)   AS cache_creation_tokens,
         uniq(session_id)             AS session_count,
+        countIf(event_name = 'user_prompt') AS prompt_count,
         count()                      AS event_count
       FROM otel.events
       WHERE ${DATE_CONDITION}
@@ -42,6 +44,7 @@ export async function getUserStats(dr: DateRange): Promise<UserStats[]> {
     cache_read_tokens: string;
     cache_creation_tokens: string;
     session_count: string;
+    prompt_count: string;
     event_count: string;
   }>();
   return rows.map((r) => ({
@@ -52,6 +55,7 @@ export async function getUserStats(dr: DateRange): Promise<UserStats[]> {
     cache_read_tokens:     parseInt(r.cache_read_tokens),
     cache_creation_tokens: parseInt(r.cache_creation_tokens),
     session_count:         parseInt(r.session_count),
+    prompt_count:          parseInt(r.prompt_count),
     event_count:           parseInt(r.event_count),
   }));
 }

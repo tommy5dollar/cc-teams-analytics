@@ -13,7 +13,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
   return (
     <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
       <p className="text-xs font-medium text-zinc-900 dark:text-zinc-50">{d.user_email}</p>
-      <p className="mt-1 text-xs text-zinc-500">{d.session_count} sessions · ${d.cost_usd.toFixed(2)}</p>
+      <p className="mt-1 text-xs text-zinc-500">{d.prompt_count} prompts · ${d.cost_usd.toFixed(2)}</p>
     </div>
   );
 }
@@ -30,8 +30,8 @@ export default function SpendByUserChart({ data }: { data: UserStats[] }) {
         <ResponsiveContainer width="100%" height={320}>
           <ScatterChart margin={{ top: 8, right: 24, bottom: 32, left: 16 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-            <XAxis type="number" dataKey="session_count" tick={{ fontSize: 11 }} name="Sessions">
-              <Label value="Sessions" position="insideBottom" offset={-16} fontSize={11} fill="#a1a1aa" />
+            <XAxis type="number" dataKey="prompt_count" tick={{ fontSize: 11 }} name="Prompts">
+              <Label value="Prompts" position="insideBottom" offset={-16} fontSize={11} fill="#a1a1aa" />
             </XAxis>
             <YAxis type="number" dataKey="cost_usd" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} name="Cost">
               <Label value="Cost (USD)" angle={-90} position="insideLeft" offset={16} fontSize={11} fill="#a1a1aa" />

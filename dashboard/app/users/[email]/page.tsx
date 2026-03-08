@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { parseDateRange } from "@/lib/queries/dateRange";
-import { getUserOverview, getUserCostOverTime, getUserSessions } from "@/lib/queries/user";
+import { getUserOverview, getUserCostOverTime, getUserSessions, getUserActivityByHour } from "@/lib/queries/user";
 import { getMcpStats, getSkillStats } from "@/lib/queries/tools";
 import { getSessionRepos } from "@/lib/queries/sessions";
 import UserCostChart from "@/components/UserCostChart";
@@ -10,6 +10,7 @@ import SessionBubbleChart from "@/components/SessionBubbleChart";
 import SessionsTable from "@/components/SessionsTable";
 import ToolsPanel from "@/components/ToolsPanel";
 import TimeRangePicker from "@/components/TimeRangePicker";
+import ActivityByHourChart from "@/components/ActivityByHourChart";
 
 export const dynamic = "force-dynamic";
 
@@ -41,12 +42,13 @@ export default async function UserPage({
   const sp = await searchParams;
   const dr = parseDateRange(sp);
 
-  const [overview, costOverTime, sessions, mcpTools, skills] = await Promise.all([
+  const [overview, costOverTime, sessions, mcpTools, skills, activityByHour] = await Promise.all([
     getUserOverview(email, dr),
     getUserCostOverTime(email, dr),
     getUserSessions(email, dr, 100),
     getMcpStats(dr, email),
     getSkillStats(dr, email),
+    getUserActivityByHour(email, dr),
   ]);
 
   const sessionRepos = await getSessionRepos(sessions.map((s) => s.session_id));
@@ -97,6 +99,9 @@ export default async function UserPage({
 
         {/* Cost over time by model */}
         <UserCostChart data={costOverTime} />
+
+        {/* Activity by hour */}
+        <ActivityByHourChart data={activityByHour} />
 
         {/* Tools */}
         <ToolsPanel mcpTools={mcpTools} skills={skills} />
